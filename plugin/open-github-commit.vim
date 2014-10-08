@@ -7,9 +7,13 @@ endif
 let g:do_not_load_open_github_commit = 1
 
 " If this command doesn't exist, create one.
-" This is the only interface for users.
 if !exists(":OpenGithubCommit")
   command OpenGithubCommit  :call s:OpenGithubCommit()
+endif
+
+" If this command doesn't exist, create one.
+if !exists(":OpenGithubPR")
+  command OpenGithubPR  :call s:OpenGithubPR()
 endif
 
 " Opens last commit of current line in the browser
@@ -20,7 +24,16 @@ function! s:OpenGithubCommit()
   else
     call s:OpenBrowser(s:GetCommitUrl(commit_sha))
   endif
+endfunction
 
+" Opens PR containing last commit of current line in the browser
+function! s:OpenGithubPR()
+  let commit_sha = s:CommitShaForCurrentLine()
+  if(commit_sha =~ "0\\{40}")
+    echohl WarningMsg | echomsg "This line is not on git yet!" | echohl None
+  else
+    call s:OpenBrowser(s:GetPRUrl(commit_sha))
+  endif
 endfunction
 
 function! s:CommitShaForCurrentLine()
@@ -41,6 +54,22 @@ function! s:GetCommitUrl(commit_sha)
   let url = substitute(colon_to_slash, "\\.git\\n", "", "")
   let commit_url = '' . url . "/commit/" . a:commit_sha
   return commit_url
+endfunction
+
+function! s:GetPRUrl(commit_sha)
+  let merged_into_branch = "HEAD"
+  let cmd = 'git ls-remote --get-url'
+  let remote = system(cmd)
+  let git_to_http = substitute(remote, "git@", "http://", "")
+  let colon_to_slash = substitute(git_to_http, "github\\.com:", "github.com/", "")
+  let url = substitute(colon_to_slash, "\\.git\\n", "", "")
+  let pr_no_output = system("git log --merges --ancestry-path --oneline " .
+        \  a:commit_sha . ".." . merged_into_branch . "| " .
+        \ "grep 'pull request' | tail -n1 | awk '{print $5}' | " .
+        \ "cut -c2-")
+  let pr_no = substitute(pr_no_output, "\n", "", "")
+  let pr_url = '' . url . "/pull/" . pr_no
+  return pr_url
 endfunction
 
 " From
