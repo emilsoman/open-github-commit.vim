@@ -1,7 +1,10 @@
 open-github-commit.vim
 ======================
 
+Adds the following commands :
+
 `:OpenGithubCommit` opens the last git commit of current line on github.
+`:OpenGithubPR` opens the PR which got merged containing the last git commit of current line.
 
 To map your custom shortcut, add this to your vimrc.
 
